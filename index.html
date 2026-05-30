@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Veille BOAMP — Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f7f6f2;
+  --surface: #ffffff;
+  --surface2: #f0efe9;
+  --border: rgba(0,0,0,0.10);
+  --border2: rgba(0,0,0,0.20);
+  --text: #1c1b18;
+  --text2: #6a6860;
+  --text3: #a8a49c;
+  --navy: #1b3454;
+  --navy-light: #e8edf3;
+  --green: #1a5c38;
+  --green-light: #e6f3ec;
+  --amber: #7a4800;
+  --amber-light: #fdf2e0;
+  --red: #8c1e1e;
+  --red-light: #fdf0f0;
+  --purple: #3d2b7a;
+  --purple-light: #f0ecfb;
+  --r: 8px;
+  --r-sm: 4px;
+}
+body { font-family: 'IBM Plex Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 13px; line-height: 1.5; min-height: 100vh; }
+
+/* MASTHEAD */
+.masthead { background: var(--navy); color: #fff; }
+.mast-inner { max-width: 1300px; margin: 0 auto; padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.mast-brand { display: flex; align-items: center; gap: 12px; }
+.mast-icon { width: 36px; height: 36px; background: rgba(255,255,255,.15); border-radius: var(--r); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.mast-title { font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
+.mast-sub { font-family: 'IBM Plex Mono', monospace; font-size: 11px; opacity: .6; margin-top: 2px; }
+.mast-right { text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 11px; opacity: .65; line-height: 1.7; }
+
+/* CONTAINER */
+.page { max-width: 1300px; margin: 0 auto; padding: 24px 28px 56px; }
+
+/* STATUS */
+.status { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); margin-bottom: 20px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text2); }
+.sdot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
+.sdot.loading { background: #d4940a; animation: pulse .9s infinite; }
+.sdot.ok { background: #2a9455; }
+.sdot.err { background: var(--red); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+.stxt { flex: 1; }
+.sbtn { display: flex; align-items: center; gap: 5px; padding: 5px 14px; background: var(--navy); color: #fff; border: none; border-radius: var(--r-sm); font-family: 'IBM Plex Mono', monospace; font-size: 11px; cursor: pointer; transition: opacity .15s; }
+.sbtn:hover { opacity: .85; }
+.sbtn:disabled { opacity: .45; cursor: not-allowed; }
+.spin { display: inline-block; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* METRICS */
+.metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+.metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; }
+.mlabel { font-family: 'IBM Plex Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: .09em; color: var(--text3); margin-bottom: 6px; }
+.mvalue { font-size: 28px; font-weight: 500; color: var(--text); line-height: 1; font-variant-numeric: tabular-nums; }
+.msub { font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+/* TOOLBAR */
+.toolbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.tlbl { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); margin-right: 4px; }
+.pill { padding: 5px 13px; border-radius: 99px; border: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--text2); cursor: pointer; transition: all .12s; }
+.pill:hover { background: var(--surface2); color: var(--text); }
+.pill.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+.srch { margin-left: auto; position: relative; }
+.srch input { padding: 6px 12px 6px 30px; border: 1px solid var(--border2); border-radius: var(--r-sm); font-size: 11px; font-family: 'IBM Plex Mono', monospace; background: var(--surface); color: var(--text); width: 190px; outline: none; }
+.srch input:focus { border-color: var(--navy); }
+.srch-ic { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--text3); pointer-events: none; }
+
+/* TABLE */
+.tbox { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+.tbox-top { padding: 10px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); background: var(--surface2); }
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+th { padding: 9px 12px; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--text3); border-bottom: 1px solid var(--border); font-weight: 400; white-space: nowrap; background: var(--surface2); }
+td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #f9f8f5; }
+.ao-t { font-weight: 500; color: var(--text); line-height: 1.35; margin-bottom: 2px; }
+.ao-id { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); margin-bottom: 2px; }
+.ao-link { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--navy); text-decoration: none; }
+.ao-link:hover { text-decoration: underline; }
+
+/* TAGS */
+.tag { display: inline-block; padding: 2px 8px; border-radius: 99px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 500; white-space: nowrap; letter-spacing: .03em; }
+.tag-eq   { background: var(--navy-light);   color: var(--navy); }
+.tag-log  { background: var(--green-light);  color: var(--green); }
+.tag-conc { background: var(--purple-light); color: var(--purple); }
+.tag-offre{ background: var(--amber-light);  color: var(--amber); }
+
+/* MONTANT */
+.mv { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; }
+.mv.ok { color: var(--green); }
+.mv.ko { color: var(--red); }
+.mv.nc { color: var(--text3); font-weight: 300; font-style: italic; font-size: 11px; }
+.mbar { height: 3px; border-radius: 99px; background: var(--border); margin-top: 4px; width: 70px; }
+.mfill { height: 100%; border-radius: 99px; }
+.mlb { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--text3); margin-top: 2px; }
+
+/* URGENCE */
+.urg { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; }
+.urg.r { color: var(--red); }
+.urg.o { color: var(--amber); }
+.urg.n { color: var(--text2); }
+.urg-s { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); margin-top: 1px; }
+
+/* SCORE */
+.stars { display: flex; align-items: center; gap: 3px; }
+.star { width: 7px; height: 7px; border-radius: 50%; }
+.star.on { background: var(--navy); }
+.star.off { background: var(--border2); }
+.star-n { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); margin-left: 4px; }
+
+.empty { text-align: center; padding: 48px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text3); }
+.footer { margin-top: 24px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); }
+
+@media (max-width: 1000px) {
+  .metrics { grid-template-columns: repeat(3, 1fr); }
+  .page { padding: 16px; }
+  .mast-inner { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="mast-inner">
+    <div class="mast-brand">
+      <div class="mast-icon">◼</div>
+      <div>
+        <div class="mast-title">Veille marchés publics</div>
+        <div class="mast-sub">BOAMP · AO en cours · Agence d'architecture</div>
+      </div>
+    </div>
+    <div class="mast-right" id="mast-date"></div>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="status">
+    <div class="sdot loading" id="sdot"></div>
+    <span class="stxt" id="stxt">Connexion à l'API BOAMP…</span>
+    <button class="sbtn" id="btnref" onclick="loadData()">
+      <span id="ricon">↻</span> Actualiser
+    </button>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="mlabel">AO en cours</div><div class="mvalue" id="m0">—</div><div class="msub">aujourd'hui</div></div>
+    <div class="metric"><div class="mlabel">Concours</div><div class="mvalue" id="m1">—</div><div class="msub">proc. restreinte</div></div>
+    <div class="metric"><div class="mlabel">Équipements</div><div class="mvalue" id="m2">—</div><div class="msub">écoles / gymnases</div></div>
+    <div class="metric"><div class="mlabel">Logements</div><div class="mvalue" id="m3">—</div><div class="msub">zones cibles</div></div>
+    <div class="metric"><div class="mlabel">Urgents</div><div class="mvalue" id="m4">—</div><div class="msub">rendu &lt; 30j</div></div>
+
+  </div>
+
+  <div class="toolbar">
+    <span class="tlbl">Filtrer :</span>
+    <button class="pill active" onclick="setF('all',this)">Tous</button>
+    <button class="pill" onclick="setF('eq',this)">Équipements</button>
+    <button class="pill" onclick="setF('log',this)">Logements</button>
+    <button class="pill" onclick="setF('conc',this)">Concours</button>
+    <button class="pill" onclick="setF('urg',this)">⚡ Urgents</button>
+    <button class="pill" onclick="setF('s5',this)">★ Score 5</button>
+
+    <div class="srch">
+      <span class="srch-ic">⌕</span>
+      <input id="qi" placeholder="Rechercher…" oninput="applyF()">
+    </div>
+  </div>
+
+  <div class="tbox">
+    <div class="tbox-top">
+      <span id="tcnt">— résultats</span>
+      <span>Source : BOAMP / DILA · Licence ouverte Etalab 2.0 · boamp.fr</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <colgroup>
+          <col style="width:22%"><col style="width:10%"><col style="width:9%"><col style="width:11%">
+          <col style="width:13%"><col style="width:8%"><col style="width:7%"><col style="width:7%"><col style="width:13%">
+        </colgroup>
+        <thead><tr>
+          <th>Consultation</th><th>Ville</th><th>Rendu</th><th>Montant travaux</th>
+          <th>Nature / CPV</th><th>Mode</th><th>Type</th><th>Score</th><th>Acheteur</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty" id="empty" style="display:none">Aucun résultat pour ce filtre.</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>⚠ Montant extrait du texte ou du champ structuré BOAMP — absent si non communiqué par l'acheteur public.</span>
+    <span id="fup"></span>
+  </div>
+
+</div>
+
+<script>
+// ── CONFIG ───────────────────────────────────────────────────
+const CFG = {
+  kw_eq:  ['école','ecole','scolaire','groupe scolaire','collège','college','lycée','lycee',
+            'gymnase','salle de sport','complexe sportif','maternelle','primaire','élémentaire',
+            'elementaire','enseignement','internat','cantine','médiathèque','mediatheque'],
+  kw_log: ['logement','logements','résidence','residence','habitat','hlm','social','locatif',
+            'collectif','icf','bailleurs','bailleur','vefa','ophlm','opac'],
+  depts_paca: ['04','05','06','13','83','84'],
+  depts_va:   ['03','74'],
+  cpv: ['71200','71210','71220','71221','71222','71223','71240','71241','71242','71243','71244','71245','71246','71247','71248','71000']
+};
+
+// ── LOGIQUE ──────────────────────────────────────────────────
+function dept(lieu) {
+  if (!lieu) return '';
+  let m = lieu.match(/\((\d{2,3})\)/); if (m) return m[1].substring(0,2);
+  m = lieu.match(/\b(\d{5})\b/);       if (m) return m[1].substring(0,2);
+  return '';
+}
+function cat(r) {
+  const o = (r.objet||'').toLowerCase(), d = dept(r.lieu_execution||'');
+  const eq  = CFG.kw_eq.some(k => o.includes(k));
+  const log = CFG.kw_log.some(k => o.includes(k));
+  // Logements : toute la France si bailleur social, sinon zones cibles seulement
+  if (log) {
+    const deptsCibles = [...CFG.depts_paca, ...CFG.depts_va];
+    const estBailleur = ['icf','ophlm','opac','hlm','bailleur'].some(k => o.includes(k));
+    if (deptsCibles.includes(d) || estBailleur || d === '') return 'log';
+    return null;
+  }
+  if (eq) return 'eq';
+  return null;
+}
+function isConc(r) {
+  return [(r.nature_marche||''),(r.typemarche||''),(r.nature||'')].join(' ').toLowerCase().includes('concours');
+}
+function jours(r) {
+  if (!r.datelimitereponse) return null;
+  return Math.round((new Date(r.datelimitereponse) - new Date()) / 86400000);
+}
+function parseMt(t) {
+  if (!t) return null; const s = t.toLowerCase();
+  let m = s.match(/(\d+[,.]?\d*)\s*m[€e]?/i); if (m) return parseFloat(m[1].replace(',','.'))*1e6;
+  m = s.match(/(\d+[,.]?\d*)\s*k[€e]?/i);     if (m) return parseFloat(m[1].replace(',','.'))*1e3;
+  m = s.match(/([\d\s]{5,15})\s*(?:€|eur|ht|ttc)/i);
+  if (m) { const v=parseFloat(m[1].replace(/\s/g,'').replace(',','.')); if (!isNaN(v)&&v>1000) return v; }
+  return null;
+}
+function montant(r) {
+  if (r.valeur_marche  && !isNaN(+r.valeur_marche))  return +r.valeur_marche;
+  if (r.valeur_estimee && !isNaN(+r.valeur_estimee)) return +r.valeur_estimee;
+  return parseMt((r.objet||'')+' '+(r.nature_marche||''));
+}
+function fmt(v) {
+  if (v === null) return null;
+  if (v >= 1e6) return (v/1e6).toFixed(1).replace('.0','')+'M€';
+  if (v >= 1e3) return Math.round(v/1e3)+'K€';
+  return v+'€';
+}
+function score(r, c, mt) {
+  let s = 0;
+  const o = (r.objet||'').toLowerCase(), cpv = (r.cpv||'').toLowerCase();
+  if (['école','ecole','scolaire','gymnase','collège','college','lycée','lycee'].some(k=>o.includes(k))) s += 2;
+  if (c === 'log') s += 3;
+  if (CFG.cpv.some(c2=>cpv.startsWith(c2.toLowerCase()))) s += 1;
+  if (isConc(r)) s += 1;
+  return Math.max(1, Math.min(s, 5));
+}
+function enrich(recs) {
+  return recs.map(r => {
+    const c = cat(r); if (!c) return null;
+    const mt = montant(r), j = jours(r);
+    if (j !== null && j < 0) return null;
+    return { ...r, _cat:c, _mt:mt, _j:j, _conc:isConc(r), _sc:score(r,c,mt) };
+  }).filter(Boolean).sort((a,b) => b._sc - a._sc || (a._j??999) - (b._j??999));
+}
+
+// ── RENDU ────────────────────────────────────────────────────
+let allData = [], curF = 'all';
+function setF(f, btn) { curF=f; document.querySelectorAll('.pill').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); applyF(); }
+function applyF() {
+  const q = (document.getElementById('qi').value||'').toLowerCase();
+  let rows = allData;
+  if (curF==='eq')   rows = rows.filter(r=>r._cat==='eq');
+  if (curF==='log')  rows = rows.filter(r=>r._cat==='log');
+  if (curF==='conc') rows = rows.filter(r=>r._conc);
+  if (curF==='urg')  rows = rows.filter(r=>r._j!==null&&r._j<30);
+  if (curF==='s5')   rows = rows.filter(r=>r._sc===5);
+
+  if (q) rows = rows.filter(r=>(r.objet||'').toLowerCase().includes(q)||(r.lieu_execution||'').toLowerCase().includes(q)||(r.acheteur||'').toLowerCase().includes(q));
+  renderTbl(rows);
+}
+function stH(n) { return `<div class="stars">${[1,2,3,4,5].map(i=>`<div class="star ${i<=n?'on':'off'}"></div>`).join('')}<span class="star-n">${n}/5</span></div>`; }
+function urgH(j, dl) {
+  if (!dl) return '<span class="urg n">—</span>';
+  const d = new Date(dl).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'2-digit'});
+  const cls = j < 30 ? 'r' : j < 45 ? 'o' : 'n', icon = j < 30 ? ' ⚡' : '';
+  return `<div class="urg ${cls}">${d}${icon}</div><div class="urg-s">${j}j restants</div>`;
+}
+function mtH(v) {
+  if (v === null) return '<span class="mv nc">Non communiqué</span>';
+  const f = fmt(v);
+  const pct = Math.min(100, Math.round(v/15e6*100));
+  return `<span class="mv ok">${f}</span><div class="mbar"><div class="mfill" style="width:${pct}%;background:#1a5c38"></div></div>`;
+}
+function renderTbl(rows) {
+  const body=document.getElementById('tbody'), empty=document.getElementById('empty');
+  document.getElementById('tcnt').textContent = `${rows.length} résultat${rows.length>1?'s':''}`;
+  if (!rows.length) { body.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display = 'none';
+  body.innerHTML = rows.map(r => {
+    const tt = r._cat==='eq' ? '<span class="tag tag-eq">Équipement</span>' : '<span class="tag tag-log">Logement</span>';
+    const mt = r._conc ? '<span class="tag tag-conc">Concours</span>' : '<span class="tag tag-offre">Offre</span>';
+    const url = r.urlboamp || `https://www.boamp.fr/avis/detail/${r.id_boamp}`;
+    return `<tr>
+      <td><div class="ao-t">${r.objet||'—'}</div><div class="ao-id">${r.id_boamp||''}</div><a class="ao-link" href="${url}" target="_blank">↗ Voir l'avis BOAMP</a></td>
+      <td style="font-size:12px;color:var(--text)">${r.lieu_execution||'—'}</td>
+      <td>${urgH(r._j,r.datelimitereponse)}</td>
+      <td>${mtH(r._mt)}</td>
+      <td><div style="font-size:11px;color:var(--text2)">${(r.nature_marche||r.nature||'').substring(0,65)}</div>${r.cpv?`<div class="ao-id">CPV ${r.cpv}</div>`:''}</td>
+      <td>${mt}</td><td>${tt}</td>
+      <td>${stH(r._sc)}</td>
+      <td><div style="font-size:11px;color:var(--text2)">${(r.acheteur||'—').substring(0,38)}</div></td>
+    </tr>`;
+  }).join('');
+}
+function updM(data) {
+  document.getElementById('m0').textContent = data.length;
+  document.getElementById('m1').textContent = data.filter(r=>r._conc).length;
+  document.getElementById('m2').textContent = data.filter(r=>r._cat==='eq').length;
+  document.getElementById('m3').textContent = data.filter(r=>r._cat==='log').length;
+  document.getElementById('m4').textContent = data.filter(r=>r._j!==null&&r._j<30).length;
+  const av = data.filter(r=>r._mt!==null);
+
+}
+
+// ── APPEL API (proxy local, pas de CORS) ─────────────────────
+async function loadData() {
+  const dot=document.getElementById('sdot'), txt=document.getElementById('stxt');
+  const btn=document.getElementById('btnref'), ico=document.getElementById('ricon');
+  dot.className='sdot loading'; txt.textContent='Connexion à l\'API BOAMP…'; btn.disabled=true; ico.textContent='⟳';
+
+  try {
+    // /api/boamp = notre fonction serverless Vercel (même domaine = pas de CORS)
+    const resp = await fetch('/api/boamp');
+    if (!resp.ok) {
+      const err = await resp.json().catch(()=>({}));
+      throw new Error(err.error || `HTTP ${resp.status}`);
+    }
+    const data = await resp.json();
+    const records = data.results || [];
+
+    const enriched = enrich(records);
+    allData = enriched; updM(enriched); applyF();
+
+    const now = new Date().toLocaleTimeString('fr-FR');
+    const avecMt = enriched.filter(r=>r._mt!==null).length;
+    dot.className = 'sdot ok';
+    txt.textContent = `${records.length} AO en cours reçus de BOAMP → ${enriched.length} retenus (${avecMt} avec montant) — ${now}`;
+    document.getElementById('fup').textContent = `Dernière actualisation : ${now}`;
+
+  } catch(err) {
+    dot.className = 'sdot err';
+    txt.textContent = `Erreur BOAMP : ${err.message}`;
+  }
+  btn.disabled = false; ico.textContent = '↻';
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+document.getElementById('mast-date').innerHTML =
+  new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) +
+  '<br>Rapport quotidien · Architecture';
+loadData();
+</script>
+</body>
+</html>
